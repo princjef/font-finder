@@ -1,3 +1,5 @@
+import * as os from 'os';
+
 import { NameTable } from './tables/name';
 import { OS2Table } from './tables/os2';
 
@@ -32,18 +34,37 @@ export function name(names: NameTable, language: string): string {
     const family = names.preferredFamily && names.preferredFamily[language]
         ? names.preferredFamily[language]
         : names.fontFamily[language];
-    const subfamily = names.preferredSubfamily && names.preferredSubfamily[language]
-        ? names.preferredSubfamily[language]
-        : names.fontSubfamily[language];
-    const fullName = `${family} ${subfamily}`;
 
-    for (const ending of standardEndings) {
-        if (fullName.endsWith(ending)) {
-            return fullName.substring(0, fullName.length - ending.length);
+    // On Windows, if the full font name doesn't end with one of the standard
+    // forms, the full name is needed to identify the font. Notably, this is not
+    // the same thing as the subfamily matching it, as with 'Roboto Thin Italic'
+    // where the subfamily is 'Thin Italic'. In this case, the 'Italic' should
+    // be removed, but not the 'Thin'.
+    // TODO: actually, 'Roboto' and 'Roboto Thin' seem to both work. This needs
+    // more work to figure out the exact logic
+    if (os.platform() === 'win32') {
+        const subfamily = names.preferredSubfamily && names.preferredSubfamily[language]
+            ? names.preferredSubfamily[language]
+            : names.fontSubfamily[language];
+        const fullName = `${family} ${subfamily}`;
+
+        let endIndex = -1;
+        for (const end of standardEndings) {
+            const index = fullName.lastIndexOf(end);
+            if (index !== -1) {
+                endIndex = index;
+                break;
+            }
         }
+
+        if (endIndex !== -1) {
+            return fullName.substring(0, endIndex);
+        }
+
+        return fullName;
     }
 
-    return fullName;
+    return family;
 }
 
 export function type(os2: OS2Table): Type {
