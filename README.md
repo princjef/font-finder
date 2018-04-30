@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/princjef/font-finder/branch/master/graph/badge.svg)](https://codecov.io/gh/princjef/font-finder)
 [![npm version](https://img.shields.io/npm/v/font-finder.svg)](https://npmjs.org/package/font-finder)
 
-Quickly find system font names and metadata without needing native dependencies.
+Quickly find system font names and metadata without native dependencies.
 
 ```
 npm install font-finder
