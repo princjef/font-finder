@@ -1,6 +1,6 @@
 {
   "name": "font-finder",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Quickly find system font names and metadata without native dependencies",
   "homepage": "https://github.com/princjef/font-finder#readme",
   "repository": {
