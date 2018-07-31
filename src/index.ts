@@ -98,7 +98,10 @@ export async function list(options?: ListOptions): Promise<FontList> {
                 const font = await parse(file);
                 return getMetadata(file, font.names, font.os2, opts.language);
             } catch (e) {
-                // swallow
+                // Don't swallow language errors
+                if (['TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'AssertionError'].includes(e.name)) {
+                    throw e;
+                }
             }
         },
         files,
