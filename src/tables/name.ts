@@ -498,7 +498,7 @@ export interface NameTable {
 // Parse the naming `name` table.
 // FIXME: Format 1 additional fields are not supported yet.
 // ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'].
-function parseNameTable(data: Buffer, ltag: string[]): NameTable {
+export default function parseNameTable(data: Buffer, ltag: string[]): NameTable {
     const name: NameTable = {};
     // const format = data.readUInt16BE(0);
     const count = data.readUInt16BE(2);
@@ -621,5 +621,3 @@ function decodeMacString(data: Buffer, offset: number, dataLength: number, encod
 
     return result;
 }
-
-export default parseNameTable;

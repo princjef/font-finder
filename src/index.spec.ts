@@ -91,6 +91,12 @@ const variants = {
         type: Type.SansSerif,
         weight: 250,
         style: Style.Italic
+    },
+    noOs2: {
+        path: path.join(__dirname, '../fonts/no-os2.otf'),
+        type: Type.Unknown,
+        weight: 400,
+        style: Style.Regular
     }
 };
 
@@ -105,7 +111,8 @@ const fonts = {
         'Pacifico': [variants.pacifico],
         'PT Serif': [variants.pt],
         'Roboto': [variants.robotoRegular, variants.robotoBold, variants.robotoBoldItalic],
-        'Roboto Thin': [variants.robotoThinItalic]
+        'Roboto Thin': [variants.robotoThinItalic],
+        'NoOS2': [variants.noOs2]
     },
     darwin: {
         'Dancing Script': [variants.dancing],
@@ -116,7 +123,8 @@ const fonts = {
         'LtagTest2': [variants.ltagTest],
         'Pacifico': [variants.pacifico],
         'PT Serif': [variants.pt],
-        'Roboto': [variants.robotoThinItalic, variants.robotoRegular, variants.robotoBold, variants.robotoBoldItalic]
+        'Roboto': [variants.robotoThinItalic, variants.robotoRegular, variants.robotoBold, variants.robotoBoldItalic],
+        'NoOS2': [variants.noOs2]
     }
 };
 
