@@ -84,10 +84,20 @@ export default async function parseFont(filePath: string): Promise<{ names: Name
                             ltag = tableInfo.ltag.parse(tableData.ltag);
                         }
 
+                        // If any of the necessary font tables are missing,
+                        // throw
+                        if (!tableData.name) {
+                            throw new Error(`missing required OpenType table 'name' in font file: ${filePath}`);
+                        }
+
+                        if (!tableData.os2) {
+                            throw new Error(`missing required OpenType table 'OS/2' in font file: ${filePath}`);
+                        }
+
                         // Parse and return the tables we need
                         return {
-                            names: tableInfo.name.parse(tableData.name!, ltag),
-                            os2: tableInfo.os2.parse(tableData.os2!)
+                            names: tableInfo.name.parse(tableData.name, ltag),
+                            os2: tableInfo.os2.parse(tableData.os2)
                         };
                     case SignatureType.Woff:
                     default:
