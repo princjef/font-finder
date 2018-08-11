@@ -8,7 +8,7 @@
 // http://www.w3.org/International/articles/language-tags/
 // http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 
-function parseLtagTable(data: Buffer) {
+export default function parseLtagTable(data: Buffer) {
     const tableVersion = data.readUInt32BE(0);
     if (tableVersion !== 1) {
         throw new Error('Unsupported ltag table version.');
@@ -31,5 +31,3 @@ function parseLtagTable(data: Buffer) {
 
     return tags;
 }
-
-export default parseLtagTable;

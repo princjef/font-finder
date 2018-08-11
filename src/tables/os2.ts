@@ -46,7 +46,7 @@ export interface OS2Table {
 }
 
 // Parse the OS/2 and Windows metrics `OS/2` table
-function parseOS2Table(data: Buffer): OS2Table {
+export default function parseOS2Table(data: Buffer): OS2Table {
     const os2: OS2Table = {
         version: data.readUInt16BE(0),
         xAvgCharWidth: data.readUInt16BE(2),
@@ -111,5 +111,3 @@ function parseOS2Table(data: Buffer): OS2Table {
 
     return os2;
 }
-
-export default parseOS2Table;

@@ -1,7 +1,6 @@
 import * as os from 'os';
 
-import { NameTable } from './tables/name';
-import { OS2Table } from './tables/os2';
+import { FontData } from './parse';
 
 export enum Type {
     Serif = 'serif',
@@ -30,10 +29,10 @@ const standardEndings = [
     ' Oblique'
 ];
 
-export function name(names: NameTable, language: string): string {
-    const family = names.preferredFamily && names.preferredFamily[language]
-        ? names.preferredFamily[language]
-        : names.fontFamily[language];
+export function name(fontData: FontData, language: string): string {
+    const family = fontData.names.preferredFamily && fontData.names.preferredFamily[language]
+        ? fontData.names.preferredFamily[language]
+        : fontData.names.fontFamily[language];
 
     // On Windows, if the full font name doesn't end with one of the standard
     // forms, the full name is needed to identify the font. Notably, this is not
@@ -43,9 +42,9 @@ export function name(names: NameTable, language: string): string {
     // TODO: actually, 'Roboto' and 'Roboto Thin' seem to both work. This needs
     // more work to figure out the exact logic
     if (os.platform() === 'win32') {
-        const subfamily = names.preferredSubfamily && names.preferredSubfamily[language]
-            ? names.preferredSubfamily[language]
-            : names.fontSubfamily[language];
+        const subfamily = fontData.names.preferredSubfamily && fontData.names.preferredSubfamily[language]
+            ? fontData.names.preferredSubfamily[language]
+            : fontData.names.fontSubfamily[language];
         const fullName = `${family} ${subfamily}`;
 
         let endIndex = -1;
@@ -67,23 +66,31 @@ export function name(names: NameTable, language: string): string {
     return family;
 }
 
-export function type(os2: OS2Table): Type {
-    // Panose specification: https://monotype.github.io/panose/pan1.htm
-    switch (os2.panose[0]) {
-        case 2:
-            // https://monotype.github.io/panose/pan2.htm#_Toc380547256
-            if (os2.panose[3] === 9) {
-                return Type.Monospace;
-            }
+export function type(fontData: FontData): Type {
+    if (fontData.os2) {
+        // Panose specification: https://monotype.github.io/panose/pan1.htm
+        switch (fontData.os2.panose[0]) {
+            case 2:
+                // https://monotype.github.io/panose/pan2.htm#_Toc380547256
+                if (fontData.os2.panose[3] === 9) {
+                    return Type.Monospace;
+                }
 
-            // https://monotype.github.io/panose/pan2.htm#Sec2SerifStyle
-            if (os2.panose[1] >= 11 && os2.panose[1] <= 15 || os2.panose[1] === 0) {
-                return Type.SansSerif;
-            }
+                // https://monotype.github.io/panose/pan2.htm#Sec2SerifStyle
+                if (
+                    fontData.os2.panose[1] >= 11 &&
+                    fontData.os2.panose[1] <= 15 ||
+                    fontData.os2.panose[1] === 0
+                ) {
+                    return Type.SansSerif;
+                }
 
-            return Type.Serif;
-        case 3:
-            return Type.Cursive;
+                return Type.Serif;
+            case 3:
+                return Type.Cursive;
+        }
+    } else if (fontData.post && fontData.post.isFixedPitch) {
+        return Type.Monospace;
     }
 
     // TODO: better classification
@@ -91,11 +98,29 @@ export function type(os2: OS2Table): Type {
 }
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#fsselection
-export function style(os2: OS2Table): Style {
-    const bold = os2.fsSelection & 0x20;        // Bit 5
-    const italic = os2.fsSelection & 0x01;      // Bit 0
-    const oblique = os2.fsSelection & 0x200;    // Bit 9
-    const regular = os2.fsSelection & 0x140;    // Bit 6 or 8 (WWS)
+export function style(fontData: FontData): Style {
+    // If we don't have an OS/2 or head table, there's no good way to figure out
+    // what's in the font
+    if (!fontData.os2 && !fontData.head) {
+        return Style.Other;
+    }
+
+    const bold = fontData.os2
+        ? fontData.os2.fsSelection & 0x20       // OS/2: fsSelection bit 5
+        : fontData.head!.macStyle & 0x01;       // head: macStyle bit 0
+    const italic = fontData.os2
+        ? fontData.os2.fsSelection & 0x01       // OS/2: fsSelection bit 0
+        : fontData.post
+            ? fontData.post.italicAngle < 0     // post: negative italicAngle
+            : fontData.head!.macStyle & 0x02;   // head: macStyle bit 1
+    const oblique = fontData.os2
+        ? fontData.os2.fsSelection & 0x200      // OS/2: fsSelection bit 9
+        : fontData.post
+            ? fontData.post.italicAngle > 0     // post: positive italicAngle
+            : 0;                                // head: N/A
+    const regular = fontData.os2
+        ? fontData.os2.fsSelection & 0x140      // OS/2: fsSelection bit 6 or 8 (WWS)
+        : 1;                                    // head: N/A (assume yes for fallback)
 
     if (bold) {
         // Oblique has to come before italic for it to get picked up
@@ -125,4 +150,19 @@ export function style(os2: OS2Table): Style {
 
     // TODO: better classification
     return Style.Other;
+}
+
+const boldStyles = [Style.Bold, Style.BoldItalic, Style.BoldOblique];
+
+export function weight(fontData: FontData): number {
+    if (fontData.os2) {
+        // Use the OS/2 weight class if available
+        return fontData.os2.usWeightClass;
+    } else if (boldStyles.includes(style(fontData))) {
+        // Assume 700 if the font is a bold font
+        return 700;
+    } else {
+        // Assume the standard 400 if all else fails
+        return 400;
+    }
 }

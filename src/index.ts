@@ -1,9 +1,7 @@
 import getSystemFonts from 'get-system-fonts';
 
-import parse from './parse';
+import parse, { FontData } from './parse';
 import * as extract from './extract';
-import { NameTable } from './tables/name';
-import { OS2Table } from './tables/os2';
 
 export { Type, Style } from './extract';
 
@@ -95,8 +93,8 @@ export async function list(options?: ListOptions): Promise<FontList> {
     const results = await parallelize(
         async (file): Promise<NamedFont | undefined> => {
             try {
-                const font = await parse(file);
-                return getMetadata(file, font.names, font.os2, opts.language);
+                const fontData = await parse(file);
+                return getMetadata(file, fontData, opts.language);
             } catch (e) {
                 // Don't swallow language errors
                 if (['TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'AssertionError'].includes(e.name)) {
@@ -148,25 +146,24 @@ export async function get(path: string, options?: GetOptions): Promise<NamedFont
         ...options
     };
 
-    const font = await parse(path);
-    return getMetadata(path, font.names, font.os2, opts.language);
+    const fontData = await parse(path);
+    return getMetadata(path, fontData, opts.language);
 }
 
 /**
  * Extracts font metadata, given the font information.
  *
  * @param path Absolute path to the font file
- * @param names Name table for the font
- * @param os2 OS/2 table for the font
+ * @param fontData Table data for the font
  * @param language Language to use when resolving names
  */
-function getMetadata(path: string, names: NameTable, os2: OS2Table, language: string): NamedFont {
+function getMetadata(path: string, fontData: FontData, language: string): NamedFont {
     return {
-        name: extract.name(names, language),
+        name: extract.name(fontData, language),
         path,
-        type: extract.type(os2),
-        weight: os2.usWeightClass,
-        style: extract.style(os2)
+        type: extract.type(fontData),
+        weight: extract.weight(fontData),
+        style: extract.style(fontData)
     };
 }
 

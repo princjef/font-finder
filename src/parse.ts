@@ -4,6 +4,8 @@ import promiseStream, { PromiseStream } from 'promise-stream-reader';
 import parseNameTable, { NameTable } from './tables/name';
 import parseLtagTable from './tables/ltag';
 import parseOS2Table, { OS2Table } from './tables/os2';
+import parseHeadTable, { HeadTable } from './tables/head';
+import parsePostTable, { PostTable } from './tables/post';
 
 enum SignatureType {
     TrueType,
@@ -23,7 +25,22 @@ const tableInfo = {
     os2: {
         tag: Buffer.from('OS/2'),
         parse: parseOS2Table
+    },
+    head: {
+        tag: Buffer.from('head'),
+        parse: parseHeadTable
+    },
+    post: {
+        tag: Buffer.from('post'),
+        parse: parsePostTable
     }
+};
+
+export type FontData = {
+    names: NameTable;
+    os2?: OS2Table;
+    head?: HeadTable;
+    post?: PostTable
 };
 
 /**
@@ -32,8 +49,8 @@ const tableInfo = {
  *
  * @param filePath Absolute path to the font to load
  */
-export default async function parseFont(filePath: string): Promise<{ names: NameTable; os2: OS2Table; }> {
-    return new Promise<{ names: NameTable; os2: OS2Table; }>((resolve, reject) => {
+export default async function parseFont(filePath: string): Promise<FontData> {
+    return new Promise<FontData>((resolve, reject) => {
         (async () => {
             const pStream = promiseStream();
             const stream = fs.createReadStream(filePath);
@@ -90,15 +107,13 @@ export default async function parseFont(filePath: string): Promise<{ names: Name
                             throw new Error(`missing required OpenType table 'name' in font file: ${filePath}`);
                         }
 
-                        if (!tableData.os2) {
-                            throw new Error(`missing required OpenType table 'OS/2' in font file: ${filePath}`);
-                        }
-
                         // Parse and return the tables we need
                         return {
                             names: tableInfo.name.parse(tableData.name, ltag),
-                            os2: tableInfo.os2.parse(tableData.os2)
-                        };
+                            os2: tableData.os2 && tableInfo.os2.parse(tableData.os2),
+                            head: tableData.head && tableInfo.head.parse(tableData.head),
+                            post: tableData.post && tableInfo.post.parse(tableData.post)
+                        } as FontData;
                     case SignatureType.Woff:
                     default:
                         throw new Error('provided font type is not supported yet');
