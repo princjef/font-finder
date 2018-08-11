@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/princjef/font-finder/compare/v1.0.3...v1.0.4) (2018-08-11)
+
+
+### Bug Fixes
+
+* **extract:** extract metadata from fonts with no OS/2 table ([7f98cca](https://github.com/princjef/font-finder/commit/7f98cca))
+
 ## [1.0.3](https://github.com/princjef/font-finder/compare/v1.0.2...v1.0.3) (2018-08-11)
 
 
