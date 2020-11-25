@@ -46,7 +46,12 @@ export interface OS2Table {
 }
 
 // Parse the OS/2 and Windows metrics `OS/2` table
-export default function parseOS2Table(data: Buffer): OS2Table {
+export default function parseOS2Table(data: Buffer): OS2Table | undefined {
+    // The OS/2 table must be at least 78 bytes long
+    if (data.length < 78) {
+        return undefined;
+    }
+
     const os2: OS2Table = {
         version: data.readUInt16BE(0),
         xAvgCharWidth: data.readUInt16BE(2),
@@ -96,12 +101,12 @@ export default function parseOS2Table(data: Buffer): OS2Table {
         usWinDescent: data.readUInt16BE(76)
     };
 
-    if (os2.version >= 1) {
+    if (os2.version >= 1 && data.length >= 86) {
         os2.ulCodePageRange1 = data.readUInt32BE(78);
         os2.ulCodePageRange2 = data.readUInt32BE(82);
     }
 
-    if (os2.version >= 2) {
+    if (os2.version >= 2 && data.length >= 96) {
         os2.sxHeight = data.readInt16BE(86);
         os2.sCapHeight = data.readInt16BE(88);
         os2.usDefaultChar = data.readUInt16BE(90);
