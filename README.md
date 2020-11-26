@@ -1,6 +1,6 @@
 # font-finder
 
-[![Travis CI build status](https://travis-ci.org/princjef/font-finder.svg?branch=master)](https://travis-ci.org/princjef/font-finder)
+[![GitHub Actions status](https://github.com/princjef/font-finder/workflows/Test/badge.svg)](https://github.com/princjef/font-finder/actions)
 [![codecov](https://codecov.io/gh/princjef/font-finder/branch/master/graph/badge.svg)](https://codecov.io/gh/princjef/font-finder)
 [![npm version](https://img.shields.io/npm/v/font-finder.svg)](https://npmjs.org/package/font-finder)
 
@@ -117,6 +117,6 @@ and `listVariants()`, but also includes the font's name.
 
 ## Contributing
 
-Want to contribute to the project? Go check out the [Contribution 
-Guide](CONTRIBUTING.md) for instructions to set up your development 
+Want to contribute to the project? Go check out the [Contribution
+Guide](CONTRIBUTING.md) for instructions to set up your development
 environment, open an issue and create a pull request.
