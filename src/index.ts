@@ -62,6 +62,11 @@ export interface ListOptions {
      * The language to use when fetching font naming information. Default: 'en'
      */
     language?: string;
+
+    /**
+     * Function to call on font loading error. Default: null
+     */
+    onFontError?: ((path: string, err: Error) => void) | null;
 }
 
 /**
@@ -83,6 +88,7 @@ export async function list(options?: ListOptions): Promise<FontList> {
     const opts: Required<ListOptions> = {
         concurrency: 4,
         language: 'en',
+        onFontError: null,
         ...options
     };
 
@@ -96,9 +102,8 @@ export async function list(options?: ListOptions): Promise<FontList> {
                 const fontData = await parse(file);
                 return getMetadata(file, fontData, opts.language);
             } catch (e) {
-                // Don't swallow language errors
-                if (['TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'AssertionError'].includes(e.name)) {
-                    throw e;
+                if (opts.onFontError) {
+                    opts.onFontError(file, e);
                 }
             }
         },
