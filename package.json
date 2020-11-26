@@ -58,7 +58,7 @@
     "nyc": "^11.7.1",
     "opener": "^1.4.3",
     "rimraf": "^2.6.2",
-    "semantic-release": "^15.8.1",
+    "semantic-release": "^17.2.3",
     "sinon": "^4.5.0",
     "tslint": "^5.11.0",
     "tslint-config-standard": "^7.0.0",
