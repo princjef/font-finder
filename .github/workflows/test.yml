@@ -24,6 +24,11 @@ jobs:
         run: npm ci
       - name: Run Tests 👩🏽‍💻
         run: npm run test
+      - name: Save .nyc_output
+      - uses: actions/upload-artifact@v2
+        with:
+          name: nyc_output
+          path: .nyc_output
 
   Coverage:
     needs: [Test]
@@ -32,6 +37,11 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+      - name: Restore .nyc_output
+      - uses: actions/download-artifact@v2
+        with:
+          name: nyc_output
+          path: .nyc_output
       - name: Install Dependencies
         run: npm ci
       - name: Run Coverage ‍🏪
