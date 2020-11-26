@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/princjef/font-finder/compare/v1.0.4...v1.0.5) (2020-11-26)
+
+
+### Bug Fixes
+
+* **parse:** handle incomplete OS/2 tables ([#9](https://github.com/princjef/font-finder/issues/9)) ([24fbd9f](https://github.com/princjef/font-finder/commit/24fbd9f))
+
 ## [1.0.4](https://github.com/princjef/font-finder/compare/v1.0.3...v1.0.4) (2018-08-11)
 
 
