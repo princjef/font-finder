@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/princjef/font-finder/compare/v1.0.5...v1.1.0) (2020-11-26)
+
+
+### Features
+
+* add onFontError to list options ([#8](https://github.com/princjef/font-finder/issues/8)) ([2ec412d](https://github.com/princjef/font-finder/commit/2ec412d))
+
 ## [1.0.5](https://github.com/princjef/font-finder/compare/v1.0.4...v1.0.5) (2020-11-26)
 
 
