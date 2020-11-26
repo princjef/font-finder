@@ -97,6 +97,12 @@ const variants = {
         type: Type.Unknown,
         weight: 400,
         style: Style.Regular
+    },
+    shortOs2: {
+        path: path.join(__dirname, '../fonts/os2-too-short.otf'),
+        type: Type.Unknown,
+        weight: 400,
+        style: Style.Regular
     }
 };
 
@@ -112,7 +118,8 @@ const fonts = {
         'PT Serif': [variants.pt],
         'Roboto': [variants.robotoRegular, variants.robotoBold, variants.robotoBoldItalic],
         'Roboto Thin': [variants.robotoThinItalic],
-        'NoOS2': [variants.noOs2]
+        'NoOS2': [variants.noOs2],
+        'ShortOS/2': [variants.shortOs2]
     },
     darwin: {
         'Dancing Script': [variants.dancing],
@@ -124,7 +131,8 @@ const fonts = {
         'Pacifico': [variants.pacifico],
         'PT Serif': [variants.pt],
         'Roboto': [variants.robotoThinItalic, variants.robotoRegular, variants.robotoBold, variants.robotoBoldItalic],
-        'NoOS2': [variants.noOs2]
+        'NoOS2': [variants.noOs2],
+        'ShortOS/2': [variants.shortOs2]
     }
 };
 
