@@ -85,10 +85,17 @@ export default async function parseFont(filePath: string): Promise<FontData | Fo
                         let fontData: FontData[] = [];
                         // Parse the TrueType Fonts within the TTC as we go
                         for (const offset of offsets) {
-                            await pStream.skip(offset - pStream.offset + 4);
-                            await parseTrueTypeFont(pStream, filePath).then((data) => {
+                            const stream2 = fs.createReadStream(filePath);
+                            const pStream2 = promiseStream();
+                            stream2.pipe(pStream2);
+
+                            await pStream2.skip(offset + 4);
+                            await parseTrueTypeFont(pStream2, filePath).then((data) => {
                                 fontData.push(data);
                             });
+                            stream.unpipe(pStream2);
+                            stream.destroy();
+                            pStream2.destroy();
                         }
                         return fontData;
                         break;

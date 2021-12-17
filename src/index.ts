@@ -118,7 +118,6 @@ export async function list(options?: ListOptions): Promise<FontList> {
         if (!fonts[name]) {
             fonts[name] = [];
         }
-
         fonts[name].push(font);
     }
 
@@ -203,7 +202,7 @@ async function parallelize<S, T>(operation: (input: S) => Promise<T>, data: S[],
     const wrapper = async (i: number) => {
         let result = await operation(data[i]);
         if (isArray(result)) {
-            results.concat(result);
+            results.push(...result);
         } else {
             results.push(await operation(data[i]));
         }
