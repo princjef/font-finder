@@ -2,6 +2,7 @@ import getSystemFonts from 'get-system-fonts';
 
 import parse, { FontData } from './parse';
 import * as extract from './extract';
+import { isArray } from 'util';
 
 export { Type, Style } from './extract';
 
@@ -92,16 +93,16 @@ export async function list(options?: ListOptions): Promise<FontList> {
         ...options
     };
 
-    // TODO: support woff, woff2, ttc
-    const files = await getSystemFonts({ extensions: ['ttf', 'otf'] });
-
+    // TODO: support woff, woff2
+    const files = await getSystemFonts({ extensions: ['ttf', 'ttc', 'otf'] });
     // Process each font in parallel, swallowing any errors found along the way.
     const results = await parallelize(
-        async (file): Promise<NamedFont | undefined> => {
+        async (file): Promise<NamedFont | NamedFont[] | undefined > => {
             try {
                 const fontData = await parse(file);
                 return getMetadata(file, fontData, opts.language);
             } catch (e) {
+                console.log(e);
                 if (opts.onFontError) {
                     opts.onFontError(file, e);
                 }
@@ -117,7 +118,6 @@ export async function list(options?: ListOptions): Promise<FontList> {
         if (!fonts[name]) {
             fonts[name] = [];
         }
-
         fonts[name].push(font);
     }
 
@@ -145,7 +145,7 @@ export async function listVariants(name: string, options?: ListOptions): Promise
  * @param path Absolute path to the file to retrieve
  * @param options Options to configure font retrieval
  */
-export async function get(path: string, options?: GetOptions): Promise<NamedFont> {
+export async function get(path: string, options?: GetOptions): Promise<NamedFont | NamedFont[]> {
     const opts: Required<GetOptions> = {
         language: 'en',
         ...options
@@ -162,14 +162,28 @@ export async function get(path: string, options?: GetOptions): Promise<NamedFont
  * @param fontData Table data for the font
  * @param language Language to use when resolving names
  */
-function getMetadata(path: string, fontData: FontData, language: string): NamedFont {
-    return {
-        name: extract.name(fontData, language),
-        path,
-        type: extract.type(fontData),
-        weight: extract.weight(fontData),
-        style: extract.style(fontData)
-    };
+function getMetadata(path: string, fontData: FontData | FontData[], language: string): NamedFont | NamedFont[] {
+    if (isArray(fontData)) {
+        let fonts: NamedFont[] = [];
+        for (const nf of fontData) {
+            fonts.push({
+                name: extract.name(nf, language),
+                path,
+                type: extract.type(nf),
+                weight: extract.weight(nf),
+                style: extract.style(nf)
+            });
+        }
+        return fonts;
+    } else {
+        return {
+            name: extract.name(fontData, language),
+            path,
+            type: extract.type(fontData),
+            weight: extract.weight(fontData),
+            style: extract.style(fontData)
+        };
+    }
 }
 
 /**
@@ -186,7 +200,12 @@ async function parallelize<S, T>(operation: (input: S) => Promise<T>, data: S[],
     let index = 0;
 
     const wrapper = async (i: number) => {
-        results.push(await operation(data[i]));
+        let result = await operation(data[i]);
+        if (isArray(result)) {
+            results.push(...result);
+        } else {
+            results.push(await operation(data[i]));
+        }
         if (index < data.length) {
             await wrapper(index++);
         }

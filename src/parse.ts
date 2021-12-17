@@ -10,7 +10,8 @@ import parsePostTable, { PostTable } from './tables/post';
 enum SignatureType {
     TrueType,
     CFF,
-    Woff
+    Woff,
+    TrueTypeCollection
 }
 
 const tableInfo = {
@@ -49,8 +50,8 @@ export type FontData = {
  *
  * @param filePath Absolute path to the font to load
  */
-export default async function parseFont(filePath: string): Promise<FontData> {
-    return new Promise<FontData>((resolve, reject) => {
+export default async function parseFont(filePath: string): Promise<FontData | FontData[]> {
+    return new Promise<FontData | FontData[]>((resolve, reject) => {
         (async () => {
             const pStream = promiseStream();
             const stream = fs.createReadStream(filePath);
@@ -69,51 +70,38 @@ export default async function parseFont(filePath: string): Promise<FontData> {
 
             try {
                 const signature = parseTag(await pStream.read(4));
-
                 switch (signature) {
+                    case SignatureType.TrueTypeCollection:
+                        // Skip over the version information
+                        await pStream.skip(4);
+
+                        // Get the number of fonts in the collection
+                        const numFonts = (await pStream.read(4)).readUInt32BE(0);
+                        // Create array with the offset of each font in the TTC file
+                        let offsets: number[] = [];
+                        for (let i = 0; i < numFonts; i++) {
+                            offsets.push((await pStream.read(4)).readUInt32BE(0));
+                        }
+                        let fontData: FontData[] = [];
+                        // Parse the TrueType Fonts within the TTC as we go
+                        for (const offset of offsets) {
+                            const stream2 = fs.createReadStream(filePath);
+                            const pStream2 = promiseStream();
+                            stream2.pipe(pStream2);
+
+                            await pStream2.skip(offset + 4);
+                            await parseTrueTypeFont(pStream2, filePath).then((data) => {
+                                fontData.push(data);
+                            });
+                            stream.unpipe(pStream2);
+                            stream.destroy();
+                            pStream2.destroy();
+                        }
+                        return fontData;
+                        break;
                     case SignatureType.TrueType:
                     case SignatureType.CFF:
-                        const numTables = (await pStream.read(2)).readUInt16BE(0);
-                        // Skip the rest of the offset table
-                        await pStream.skip(6);
-
-                        // Get the table metadata
-                        const tableMeta = await findTableRecords(pStream, numTables);
-
-                        // Order the tables based on location in the file. We
-                        // want to look for earlier tables first
-                        const orderedTables = Object.entries(tableMeta)
-                            .sort((a, b) => a[1]!.offset - b[1]!.offset);
-
-                        // Get the buffer representing each of the tables
-                        const tableData: { [K in keyof typeof tableInfo]?: Buffer } = {};
-                        for (const [name, meta] of orderedTables) {
-                            // Skip the data between the end of the previous
-                            // table and the start of this one
-                            await pStream.skip(meta!.offset - pStream.offset);
-                            tableData[name] = await pStream.read(meta!.length);
-                        }
-
-                        // The ltag table is usually not present, but parse it
-                        // first if it is because we need it for the name table.
-                        let ltag: string[] = [];
-                        if (tableData.ltag) {
-                            ltag = tableInfo.ltag.parse(tableData.ltag);
-                        }
-
-                        // If any of the necessary font tables are missing,
-                        // throw
-                        if (!tableData.name) {
-                            throw new Error(`missing required OpenType table 'name' in font file: ${filePath}`);
-                        }
-
-                        // Parse and return the tables we need
-                        return {
-                            names: tableInfo.name.parse(tableData.name, ltag),
-                            os2: tableData.os2 && tableInfo.os2.parse(tableData.os2),
-                            head: tableData.head && tableInfo.head.parse(tableData.head),
-                            post: tableData.post && tableInfo.post.parse(tableData.post)
-                        } as FontData;
+                        return await parseTrueTypeFont(pStream, filePath);
                     case SignatureType.Woff:
                     default:
                         throw new Error('provided font type is not supported yet');
@@ -130,12 +118,58 @@ export default async function parseFont(filePath: string): Promise<FontData> {
     });
 }
 
+async function parseTrueTypeFont(pStream, filePath): Promise<FontData> {
+    const numTables = (await pStream.read(2)).readUInt16BE(0);
+    // Skip the rest of the offset table
+    await pStream.skip(6);
+
+    // Get the table metadata
+    const tableMeta = await findTableRecords(pStream, numTables);
+
+    // Order the tables based on location in the file. We
+    // want to look for earlier tables first
+    const orderedTables = Object.entries(tableMeta)
+        .sort((a, b) => a[1]!.offset - b[1]!.offset);
+
+    // Get the buffer representing each of the tables
+    const tableData: { [K in keyof typeof tableInfo]?: Buffer } = {};
+    for (const [name, meta] of orderedTables) {
+        // Skip the data between the end of the previous
+        // table and the start of this one
+        await pStream.skip(meta!.offset - pStream.offset);
+        tableData[name] = await pStream.read(meta!.length);
+    }
+
+    // The ltag table is usually not present, but parse it
+    // first if it is because we need it for the name table.
+    let ltag: string[] = [];
+    if (tableData.ltag) {
+        ltag = tableInfo.ltag.parse(tableData.ltag);
+    }
+
+    // If any of the necessary font tables are missing,
+    // throw
+    if (!tableData.name) {
+        throw new Error(`missing required OpenType table 'name' in font file: ${filePath}`);
+    }
+
+    // Parse and return the tables we need
+    let fd = {
+        names: tableInfo.name.parse(tableData.name, ltag),
+        os2: tableData.os2 && tableInfo.os2.parse(tableData.os2),
+        head: tableData.head && tableInfo.head.parse(tableData.head),
+        post: tableData.post && tableInfo.post.parse(tableData.post)
+    };
+    return fd as FontData;
+}
+
 const signatures = {
     one: Buffer.from([0x00, 0x01, 0x00, 0x00]),
     otto: Buffer.from('OTTO'),
     true: Buffer.from('true'),
     typ1: Buffer.from('typ1'),
-    woff: Buffer.from('wOFF')
+    woff: Buffer.from('wOFF'),
+    ttc: Buffer.from('ttcf')
 };
 
 /**
@@ -154,6 +188,8 @@ function parseTag(tag: Buffer): SignatureType {
         return SignatureType.CFF;
     } else if (tag.equals(signatures.woff)) {
         return SignatureType.Woff;
+    } else if (tag.equals(signatures.ttc)) {
+        return SignatureType.TrueTypeCollection;
     } else {
         throw new Error(`Unsupported signature type: ${tag}`);
     }
